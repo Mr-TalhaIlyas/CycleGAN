@@ -26,10 +26,10 @@ import matplotlib.pyplot as plt
 from generator import Generator
 from discriminator import Discriminator
 from tqdm import tqdm
-from utils import Trainer
+from utils import Trainer, save_checkpoint
 from torchvision.utils import save_image
 
-torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.benchmark = config['BENCHMARK']
 
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -50,7 +50,7 @@ val_loader = DataLoader(train_data, batch_size=config['batch_size'], shuffle=Tru
                         #   collate_fn=collate,
                           pin_memory=config['pin_memory'],
                           prefetch_factor=2, persistent_workers=True)
-# # DataLoader Sanity Checks
+# DataLoader Sanity Checks
 # batch = next(iter(train_loader))
 # s=127.5
 # img_ls = []
@@ -103,30 +103,34 @@ trainer = Trainer(gen_A, gen_B, disc_A, disc_B, optim_disc, optim_gen, L1, mse, 
 for epoch in range(config['epochs']):
 
     pbar = tqdm(train_loader)
-    gl, dl = [], []
+    gl, dl, tr, tf = [], [], [], []
     for step, data_batch in enumerate(pbar):
 
-        gen_loss, disc_loss, fake_A, fake_B = trainer.training_step(data_batch)
+        gen_loss, disc_loss, t_real, t_fake, real_A, real_B, fake_A, fake_B = trainer.training_step(step, epoch, data_batch)
         
         pbar.set_description(f'Epoch {epoch+1}/{config["epochs"]} - G_loss {gen_loss:.4f} - D_loss {disc_loss:.4f}')
         gl.append(gen_loss)
         dl.append(disc_loss)
+        tr.append(t_real)
+        tf.append(t_fake)
 
     print(f'=> Average G-loss: {np.nanmean(gl)}, Average D-loss: {np.nanmean(dl)}')
 
     if (epoch + 1) % 10 == 0:
-        A = list((fake_A*0.5+0.5).detach().permute(0,2,3,1).cpu().numpy().astype(np.uint8))
-        B = list((fake_B*0.5+0.5).detach().permute(0,2,3,1).cpu().numpy().astype(np.uint8))
-        tiled = imgviz.tile(A+B, shape=(2,1), border=(255,0,0))
-        save_image(fake_A*0.5+0.5, f"{config['log_directory']}horse_{epoch}.png")
-        save_image(fake_B*0.5+0.5, f"{config['log_directory']}zebra_{epoch}.png")
+        FA = list(((fake_A*0.5+0.5).detach().permute(0,2,3,1).cpu().numpy()*255).astype(np.uint8))
+        FB = list(((fake_B*0.5+0.5).detach().permute(0,2,3,1).cpu().numpy()*255).astype(np.uint8))
+        RA = list(((real_A*0.5+0.5).detach().permute(0,2,3,1).cpu().numpy()*255).astype(np.uint8))
+        RB = list(((real_B*0.5+0.5).detach().permute(0,2,3,1).cpu().numpy()*255).astype(np.uint8))
+        # becaluse fake iamge A is made from raal image B.
+        tiled = imgviz.tile(RA+RB+FB+FA, shape=(2,2), border=(255,0,0))
 
         if config['LOG_WANDB']:
             wandb.log({'Generations': wandb.Image(tiled)}, step=epoch+1)
         
     if config['LOG_WANDB']:
-        wandb.log({"G_Loss": np.nanmean(gl), "D_Loss": np.nanmean(dl)}, step=epoch+1)
-
+        wandb.log({"G_Loss": np.nanmean(gl), "D_Loss": np.nanmean(dl),
+                    "t_real": np.nanmean(tr), "t_fake": np.nanmean(tf)}, step=epoch+1)
+    
 if config['LOG_WANDB']:
     wandb.run.finish()
 #%%
