@@ -23,8 +23,10 @@ class Trainer(object):
         self.mse = mse
         self.g_scaler = g_scaler
         self.d_scaler = d_scaler
+        self.track_real = 0
+        self.track_fake = 0
     
-    def training_step(self, batched_data, return_all=False):
+    def training_step(self, step, epoch, batched_data, return_all=False):
         # imgA_batch = images_transform(batched_data['imgA']) # to tensor and to cuda
         # imgB_batch = images_transform(batched_data['imgB'])
         imgA_batch, imgB_batch = batched_data
@@ -41,7 +43,9 @@ class Trainer(object):
             fake_A_loss = self.mse(fake_A_feats, torch.zeros_like(fake_A_feats))
 
             disc_A_loss = real_A_loss + fake_A_loss
-            
+            # just for tracking
+            self.track_real += real_A_feats.mean().item()
+            self.track_fake += fake_A_feats.mean().item()
             # train 2nd discriminator
             fake_B = self.gen_B(imgA_batch)
             real_B_feats = self.disc_B(imgB_batch)
@@ -93,10 +97,27 @@ class Trainer(object):
         self.g_scaler.step(self.optim_gen)
         self.g_scaler.update()
 
+        self.track_real = self.track_real/(step+1)
+        self.track_fake = self.track_fake/(step+1)
+
+        if (epoch + 1) % 50 == 0:
+            print("=> Saving checkpoints")
+            save_checkpoint(self.gen_A, self.optim_gen, filename=config['GEN_A_CHKPT']+epoch)
+            save_checkpoint(self.gen_A, self.optim_gen, filename=config['GEN_B_CHKPT']+epoch)
+            save_checkpoint(self.gen_A, self.optim_gen, filename=config['DISC_A_CHKPT']+epoch)
+            save_checkpoint(self.gen_A, self.optim_gen, filename=config['DISC_B_CHKPT']+epoch)
+
         if return_all:
             return (G_loss, disc_loss, cycleA_loss, cycleB_loss, identityA_loss,
                     identityB_loss, real_A_loss, real_B_loss, fake_A_loss, fake_B_loss, fake_A, fake_B)
         else:
-            return (G_loss.item(), disc_loss.item(), fake_A, fake_B)
+            return (G_loss.item(), disc_loss.item(), self.track_real, self.track_fake,
+                    imgA_batch, imgB_batch, fake_A, fake_B)
 
 
+def save_checkpoint(model, optimizer, filename="my_checkpoint.pth.tar"):
+    checkpoint = {
+        "state_dict": model.state_dict(),
+        "optimizer": optimizer.state_dict(),
+    }
+    torch.save(checkpoint, f'{config["checkpoint_path"]}{filename}') 

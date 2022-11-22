@@ -61,8 +61,8 @@ class CycelGANDataset(Dataset):
             dataBimg, (self.img_width, self.img_height), interpolation=cv2.INTER_LINEAR)
 
         if self.normalize:
-            dataAimg = std_norm(dataAimg, alpha=0, beta=255)
-            dataBimg = std_norm(dataBimg, alpha=0, beta=255)
+            dataAimg = std_norm(dataAimg, alpha=0, beta=1)
+            dataBimg = std_norm(dataBimg, alpha=0, beta=1)
 
         if self.augment_data:
             # dataAimg, dataBimg = geomatric_augs(dataAimg, dataBimg)

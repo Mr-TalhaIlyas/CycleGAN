@@ -22,7 +22,8 @@ DISC_B_CHKPT: "disc_b.pth.tar"
 data_dir: "/home/user01/data/talha/cyclegan/data/horse2zebra/"
 # add sub dirs inside of train/val and test
 sub_directories: ['train/', 'test/']
-Normalize_data: True
+Augment_data: True
+Normalize_data: False
 Shuffle_data: True
 
 pin_memory: True
@@ -38,7 +39,7 @@ label_smoothing: 0.0
 batch_size: 1
 WEIGHT_DECAY: 0.00005
 # only for training data
-Augment_data: True
+
 
 LAMBDA_IDENTITY: 0.0
 LAMBDA_CYCLE: 10.0
