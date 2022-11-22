@@ -5,15 +5,18 @@
 gpus_to_use: '3'
 DPI: 300
 LOG_WANDB: True
-BENCHMARK: False
+BENCHMARK: True
 
-project_name: 'cyclegan_1'
-experiment_name: 'CycleGAN'
-use_ocr: True
+project_name: 'CycleGAN'
+experiment_name: 'cyclegan_1'
+
 
 log_directory: "/home/user01/data/talha/cyclegan/logs/"
 checkpoint_path: "/home/user01/data/talha/cyclegan/chkpts/"
-
+GEN_A_CHKPT: "gen_a.pth.tar"
+GEN_B_CHKPT: "gen_b.pth.tar"
+DISC_A_CHKPT: "disc_a.pth.tar"
+DISC_B_CHKPT: "disc_b.pth.tar"
 # Data loader parameters
 
 data_dir: "/home/user01/data/talha/cyclegan/data/horse2zebra/"
