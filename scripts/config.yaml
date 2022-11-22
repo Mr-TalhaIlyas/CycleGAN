@@ -1,0 +1,44 @@
+# Configuration file for trinag model and hyperparameter settings
+# of crop and weed dataset
+
+#'0,1,2,3'
+gpus_to_use: '3'
+DPI: 300
+LOG_WANDB: True
+BENCHMARK: False
+
+project_name: 'cyclegan_1'
+experiment_name: 'CycleGAN'
+use_ocr: True
+
+log_directory: "/home/user01/data/talha/cyclegan/logs/"
+checkpoint_path: "/home/user01/data/talha/cyclegan/chkpts/"
+
+# Data loader parameters
+
+data_dir: "/home/user01/data/talha/cyclegan/data/horse2zebra/"
+# add sub dirs inside of train/val and test
+sub_directories: ['train/', 'test/']
+Normalize_data: True
+Shuffle_data: True
+
+pin_memory: True
+num_workers: 6
+
+img_height: 256
+img_width: 256
+
+# 4 means output of network is 4 times downsampled than input.
+output_stride: 4
+input_channels: 3
+label_smoothing: 0.0
+batch_size: 1
+WEIGHT_DECAY: 0.00005
+# only for training data
+Augment_data: True
+
+LAMBDA_IDENTITY: 0.0
+LAMBDA_CYCLE: 10.0
+
+learning_rate: 1e-5
+epochs: 200
