@@ -10,19 +10,8 @@ from tabulate import tabulate
 import cv2
 import numpy as np
 from data_utils import std_norm
-# import os, random, time
-import albumentations as A
-from albumentations.pytorch import ToTensorV2
 
-transforms = A.Compose(
-    [
-        A.Resize(width=256, height=256),
-        A.HorizontalFlip(p=0.5),
-        A.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5], max_pixel_value=255),
-        ToTensorV2(),
-     ],
-    additional_targets={"image0": "image"},
-)
+
 
 class CycelGANDataset(Dataset):
     def __init__(self, root_dir, img_height, img_width, train=True, normalize=True, augment_data=False):
@@ -48,7 +37,7 @@ class CycelGANDataset(Dataset):
 
     def __getitem__(self, index):
 
-        # data_sample = {} 
+        data_sample = {} 
 
         dataAimg = cv2.imread(self.dataA[index % self.dataAlen])
         dataAimg = cv2.cvtColor(dataAimg, cv2.COLOR_BGR2RGB)
@@ -61,16 +50,13 @@ class CycelGANDataset(Dataset):
             dataBimg, (self.img_width, self.img_height), interpolation=cv2.INTER_LINEAR)
 
         if self.normalize:
-            dataAimg = std_norm(dataAimg, alpha=0, beta=1)
-            dataBimg = std_norm(dataBimg, alpha=0, beta=1)
+            dataAimg = std_norm(dataAimg, alpha=-1, beta=1)
+            dataBimg = std_norm(dataBimg, alpha=-1, beta=1)
 
         if self.augment_data:
-            # dataAimg, dataBimg = geomatric_augs(dataAimg, dataBimg)
-            augmentations = transforms(image=dataAimg, image0=dataBimg)
-            dataAimg = augmentations["image"]
-            dataBimg = augmentations["image0"]
+            dataAimg, dataBimg = geomatric_augs(dataAimg, dataBimg)
 
-        # data_sample['imgA'] = dataAimg
-        # data_sample['imgB'] = dataBimg
+        data_sample['imgA'] = dataAimg
+        data_sample['imgB'] = dataBimg
 
-        return dataAimg, dataBimg#data_sample
+        return data_sample

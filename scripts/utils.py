@@ -12,7 +12,9 @@ from data_utils import images_transform
 DEVICE = 'cuda' if torch.cuda.is_available() else 'cpu'
 
 class Trainer(object):
-    def __init__(self, gen_A, gen_B, disc_A, disc_B, optim_disc, optim_gen, l1, mse, g_scaler, d_scaler):
+    def __init__(self, gen_A, gen_B, disc_A, disc_B, optim_disc, optim_gen, l1, mse,
+                 g_scaler, d_scaler):
+
         self.gen_A = gen_A
         self.gen_B = gen_B
         self.disc_A = disc_A
@@ -23,15 +25,11 @@ class Trainer(object):
         self.mse = mse
         self.g_scaler = g_scaler
         self.d_scaler = d_scaler
-        self.track_real = 0
-        self.track_fake = 0
     
-    def training_step(self, step, epoch, batched_data, return_all=False):
-        # imgA_batch = images_transform(batched_data['imgA']) # to tensor and to cuda
-        # imgB_batch = images_transform(batched_data['imgB'])
-        imgA_batch, imgB_batch = batched_data
-        imgA_batch = imgA_batch.to(DEVICE)
-        imgB_batch = imgB_batch.to(DEVICE)
+    def training_step(self, step, epoch, batched_data, save_chkpt=False):
+        imgA_batch = images_transform(batched_data['imgA']) # to tensor and to cuda
+        imgB_batch = images_transform(batched_data['imgB'])
+
         # TRAIN DISCRIMINATORS
         with torch.cuda.amp.autocast():
             # train 1st discriminator
@@ -43,9 +41,7 @@ class Trainer(object):
             fake_A_loss = self.mse(fake_A_feats, torch.zeros_like(fake_A_feats))
 
             disc_A_loss = real_A_loss + fake_A_loss
-            # just for tracking
-            self.track_real += real_A_feats.mean().item()
-            self.track_fake += fake_A_feats.mean().item()
+            
             # train 2nd discriminator
             fake_B = self.gen_B(imgA_batch)
             real_B_feats = self.disc_B(imgB_batch)
@@ -96,23 +92,32 @@ class Trainer(object):
         self.g_scaler.scale(G_loss).backward()
         self.g_scaler.step(self.optim_gen)
         self.g_scaler.update()
-
-        self.track_real = self.track_real/(step+1)
-        self.track_fake = self.track_fake/(step+1)
-
-        if (epoch + 1) % 50 == 0:
+        
+        if save_chkpt:
             print("=> Saving checkpoints")
-            save_checkpoint(self.gen_A, self.optim_gen, filename=config['GEN_A_CHKPT']+epoch)
-            save_checkpoint(self.gen_A, self.optim_gen, filename=config['GEN_B_CHKPT']+epoch)
-            save_checkpoint(self.gen_A, self.optim_gen, filename=config['DISC_A_CHKPT']+epoch)
-            save_checkpoint(self.gen_A, self.optim_gen, filename=config['DISC_B_CHKPT']+epoch)
+            save_checkpoint(self.gen_A, self.optim_gen,
+                            filename=f"{str(epoch)}_{config['experiment_name']}_{config['GEN_A_CHKPT']}")
+            save_checkpoint(self.gen_A, self.optim_gen,
+                            filename=f"{str(epoch)}_{config['experiment_name']}_{config['GEN_B_CHKPT']}")
+            save_checkpoint(self.gen_A, self.optim_gen,
+                            filename=f"{str(epoch)}_{config['experiment_name']}_{config['DISC_A_CHKPT']}")
+            save_checkpoint(self.gen_A, self.optim_gen,
+                            filename=f"{str(epoch)}_{config['experiment_name']}_{config['DISC_B_CHKPT']}")
 
-        if return_all:
-            return (G_loss, disc_loss, cycleA_loss, cycleB_loss, identityA_loss,
-                    identityB_loss, real_A_loss, real_B_loss, fake_A_loss, fake_B_loss, fake_A, fake_B)
-        else:
-            return (G_loss.item(), disc_loss.item(), self.track_real, self.track_fake,
-                    imgA_batch, imgB_batch, fake_A, fake_B)
+        output = {
+            'Gen_Loss'  : G_loss.item(),
+            'Disc_Loss' : disc_loss.item(),
+            'Gen_LR'  : self.optim_gen.param_groups[0]['lr'],
+            'Disc_LR' : self.optim_disc.param_groups[0]['lr'],
+            'img_a' : imgA_batch,
+            'img_b' : imgB_batch,
+            'fake_a': fake_A,
+            'fake_b': fake_B,
+            'gen_grad_scale'  : self.g_scaler.get_scale(),
+            'disc_grad_scale' : self.d_scaler.get_scale(),
+        }
+
+        return output
 
 
 def save_checkpoint(model, optimizer, filename="my_checkpoint.pth.tar"):

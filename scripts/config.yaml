@@ -8,7 +8,7 @@ LOG_WANDB: True
 BENCHMARK: True
 
 project_name: 'CycleGAN'
-experiment_name: 'cyclegan_1'
+experiment_name: 'cyclegan_no_gs'
 
 
 log_directory: "/home/user01/data/talha/cyclegan/logs/"
@@ -23,7 +23,7 @@ data_dir: "/home/user01/data/talha/cyclegan/data/horse2zebra/"
 # add sub dirs inside of train/val and test
 sub_directories: ['train/', 'test/']
 Augment_data: True
-Normalize_data: False
+Normalize_data: True
 Shuffle_data: True
 
 pin_memory: True
@@ -33,16 +33,16 @@ img_height: 256
 img_width: 256
 
 # 4 means output of network is 4 times downsampled than input.
-output_stride: 4
 input_channels: 3
-label_smoothing: 0.0
 batch_size: 1
 WEIGHT_DECAY: 0.00005
 # only for training data
 
 
-LAMBDA_IDENTITY: 0.0
+LAMBDA_IDENTITY: 5.0
 LAMBDA_CYCLE: 10.0
 
-learning_rate: 1e-5
+learning_rate: 0.0002
 epochs: 200
+start_epoch: 0
+decay_epoch: 100
