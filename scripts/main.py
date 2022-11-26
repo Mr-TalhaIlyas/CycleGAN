@@ -139,11 +139,11 @@ for epoch in range(config['epochs']):
         # becaluse fake iamge A is made from raal image B.
         tiled = imgviz.tile(RA+RB+FB+FA, shape=(2,2), border=(255,0,0))
 
-    if (epoch + 1) % 50 == 0:
-        save_chkpt = True
-
         if config['LOG_WANDB']:
             wandb.log({'Generations': wandb.Image(tiled)}, step=epoch+1)
+
+    if (epoch + 1) % 50 == 0:
+        save_chkpt = True
         
     if config['LOG_WANDB']:
         wandb.log({"G_Loss": np.nanmean(gl), "D_Loss": np.nanmean(dl),
