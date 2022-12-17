@@ -1,3 +1,5 @@
+<img alt="PyTorch" src="https://img.shields.io/badge/PyTorch%20-%23EE4C2C.svg?&style=for-the-badge&logo=PyTorch&logoColor=white" /> 
+
 # CycleGAN
 
 ## Generated Images 
